@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AtithiGuide</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;color:#222;background:#fff;overflow:hidden}
+button,select{font:inherit}
+.navbar{height:72px;border-bottom:1px solid #e5e5e5;display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:#fff;position:relative;z-index:20}
+.logo{font-size:25px;font-weight:700;letter-spacing:-1px}.logo span{color:#f47b20}
+.nav-links{display:flex;gap:38px;position:absolute;left:50%;transform:translateX(-50%)}
+.nav-links button,.profile-btn{border:0;background:none;cursor:pointer;color:#555;font-size:15px}
+.nav-links button:hover,.profile-btn:hover{color:#f47b20}
+.page{height:calc(100vh - 72px);display:none;position:relative}.active-page{display:block}
+.selection-bar{height:76px;border-bottom:1px solid #e5e5e5;display:flex;align-items:center;gap:10px;padding:0 25px;background:#fff;position:relative;z-index:10}
+.selection-bar select{height:40px;border:1px solid #ddd;border-radius:7px;padding:0 12px;background:#fff;min-width:145px;outline:none}
+.selection-bar select:focus{border-color:#f47b20}
+.action-btn,.route-btn,.plan-btn,.continue-btn{height:40px;border:0;border-radius:7px;padding:0 17px;background:#f47b20;color:#fff;cursor:pointer}
+.action-btn:hover,.route-btn:hover,.plan-btn:hover,.continue-btn:hover{background:#df6812}
+.action-btn:disabled,.verify-location-btn:disabled{cursor:not-allowed;opacity:.85}
+.processing{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.verify-location-btn.processing-btn{display:flex;align-items:center;justify-content:center;gap:7px;min-width:95px}
+.verify-location-btn.processing-btn .spinner{width:13px;height:13px;border-width:2px;border-color:#f47b20;border-top-color:transparent}
+.sidebar{position:absolute;left:0;top:76px;bottom:0;width:300px;background:#fff;border-right:1px solid #e5e5e5;z-index:8;transition:.25s;overflow-y:auto}
+.sidebar.closed{transform:translateX(-100%)}
+.sidebar h3{padding:22px 22px 15px;font-size:17px}
+.location-list{padding:0 15px}
+.location-item{padding:13px 10px;border-bottom:1px solid #eee;cursor:pointer}
+.location-item:hover{background:#fff8f2}
+.location-item strong{font-size:14px}
+.location-item small{display:block;color:#777;margin-top:4px}
+.sidebar-toggle{position:absolute;left:315px;top:92px;width:40px;height:40px;border:1px solid #ddd;background:#fff;border-radius:7px;z-index:12;cursor:pointer;font-size:19px;transition:.25s}
+.sidebar.closed+.sidebar-toggle{left:15px}
+.map-area{position:absolute;left:300px;right:0;top:76px;bottom:0;overflow:hidden;background:#fafafa;transition:.25s}
+.sidebar.closed~.map-area{left:0}
+.map{position:absolute;width:1400px;height:800px;left:50%;top:50%;transform:translate(-50%,-50%);transform-origin:center;background-image:linear-gradient(#eaeaea 1px,transparent 1px),linear-gradient(90deg,#eaeaea 1px,transparent 1px);background-size:40px 40px}
+.edge{stroke:#bdbdbd;stroke-width:2;stroke-dasharray:5 7;fill:none}
+.route-edge{stroke:#f47b20;stroke-width:3;stroke-dasharray:7 6;fill:none}
+.node{cursor:pointer}
+.node circle{fill:#fff;stroke:#555;stroke-width:3}
+.node.visited circle{fill:#35a853;stroke:#23823e}
+.node.route circle{fill:#f47b20;stroke:#c85d0d}
+.node-label{font-size:14px;font-weight:600;fill:#222;pointer-events:none}
+.info{position:absolute;right:25px;top:95px;width:285px;background:#fff;border:1px solid #e1e1e1;border-radius:10px;padding:18px;z-index:7;box-shadow:0 8px 25px rgba(0,0,0,.08);display:none}
+.info.show{display:block}
+.info h3{font-size:18px;margin-bottom:8px}
+.info p{font-size:13px;color:#666;line-height:1.5}
+.info-images{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.info-images img{width:100%;height:90px;object-fit:cover;border-radius:7px;border:1px solid #e5e5e5}
+.zoom{position:absolute;left:20px;bottom:20px;display:flex;gap:6px;z-index:7}
+.zoom button,.controls button{width:38px;height:38px;border:1px solid #ddd;background:#fff;border-radius:7px;cursor:pointer;font-size:18px}
+.zoom button:hover,.controls button:hover{border-color:#f47b20}
+.controls{position:absolute;right:25px;bottom:20px;display:flex;gap:7px;z-index:7}
+.controls button{width:auto;padding:0 13px;font-size:13px}
+.route-box{position:absolute;right:25px;top:50%;transform:translateY(-50%);background:#fff;border:1px solid #ddd;border-radius:8px;padding:13px 15px;z-index:7;min-width:260px;max-width:320px;box-shadow:0 8px 25px rgba(0,0,0,.06)}
+.route-box strong{font-size:13px}
+.route-box span{display:block;margin-top:5px;font-size:13px;line-height:1.5}
+.explore-next{position:absolute;right:25px;bottom:20px;z-index:9}
+.plan-page,.document-page,.profile-page{height:100%;overflow-y:auto;padding:40px}
+.plan-container,.document-card,.profile-card{max-width:900px;margin:auto}
+.plan-container h1,.document-card h1,.profile-card h1{font-size:28px;margin-bottom:8px}
+.page-subtitle{color:#777;margin-bottom:30px}
+.journey{position:relative;padding-left:35px;padding-bottom:60px}
+.journey:before{content:"";position:absolute;left:11px;top:15px;bottom:15px;border-left:2px dashed #ddd}
+.journey-item{position:relative;display:flex;align-items:center;justify-content:space-between;gap:15px;padding:15px 0}
+.journey-dot{position:absolute;left:-35px;width:25px;height:25px;border-radius:50%;background:#fff;border:2px solid #f47b20;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;z-index:2}
+.journey-item.verified .journey-dot{background:#35a853;border-color:#35a853;color:#fff}
+.journey-info{flex:1}
+.journey-info strong{font-size:15px}
+.journey-info small{display:block;color:#777;margin-top:4px}
+.journey-buttons{display:flex;gap:7px;align-items:center}
+.verify-location-btn,.camera-btn{height:34px;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;padding:0 11px}
+.verify-location-btn:hover,.camera-btn:hover{border-color:#f47b20;background:#fff8f2}
+.verify-location-btn.verified{background:#35a853;color:#fff;border-color:#35a853}
+.camera-btn{width:38px;padding:0;font-size:16px}
+.transport-between{display:flex;align-items:center;gap:8px;margin:0 0 0 0;padding:8px 0 8px 0}
+.transport-between span{font-size:12px;color:#888;margin-right:3px}
+.transport-btn{height:32px;border:1px solid #ddd;background:#fff;border-radius:6px;padding:0 11px;cursor:pointer;font-size:12px}
+.transport-btn:hover{border-color:#f47b20;background:#fff8f2}
+.transport-btn.selected{background:#f47b20;color:#fff;border-color:#f47b20}
+.document-card{border:1px solid #e5e5e5;border-radius:12px;padding:30px;margin-bottom:80px}
+.document-section{margin-top:25px}
+.document-section h3{font-size:16px;margin-bottom:10px}
+.document-route{font-size:16px;line-height:2;color:#555}
+.document-route span{color:#f47b20;font-weight:700}
+.profile-card{text-align:center;border:1px solid #e5e5e5;border-radius:12px;padding:50px}
+.avatar{width:80px;height:80px;border-radius:50%;background:#f47b20;color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;margin:0 auto 18px}
+.section-nav{position:fixed;left:0;right:0;bottom:0;height:70px;display:flex;align-items:center;justify-content:space-between;padding:0 25px;pointer-events:none;z-index:30}
+.section-nav button{pointer-events:auto;height:42px;border:1px solid #ddd;background:#fff;border-radius:7px;padding:0 17px;cursor:pointer;color:#444}
+.section-nav button.next{background:#f47b20;color:#fff;border-color:#f47b20}
+.section-nav button:hover{border-color:#f47b20}
+.dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:100}
+.dialog-overlay.show{display:flex}
+.dialog-box{background:#fff;width:340px;border-radius:12px;padding:25px;text-align:center;box-shadow:0 15px 40px rgba(0,0,0,.2)}
+.dialog-icon{width:45px;height:45px;border-radius:50%;background:#fff3e9;color:#f47b20;display:flex;align-items:center;justify-content:center;margin:0 auto 15px;font-size:22px}
+.dialog-box h3{margin-bottom:8px}
+.dialog-box p{color:#666;font-size:14px;line-height:1.5}
+.dialog-ok{margin-top:20px;width:100%;height:40px;border:0;border-radius:7px;background:#f47b20;color:#fff;cursor:pointer}
+.camera-choice{display:flex;gap:10px;margin-top:20px}
+.camera-choice button{flex:1;height:40px;border:0;border-radius:7px;background:#f47b20;color:#fff;cursor:pointer}
+.camera-choice button:last-child{background:#eee;color:#333}
+@media(max-width:900px){
+.nav-links{gap:15px}
+.navbar{padding:0 15px}
+.selection-bar{overflow-x:auto}
+.selection-bar select{min-width:125px}
+.info{right:15px;width:250px}
+.route-box{right:15px;min-width:220px;max-width:260px}
+.sidebar{width:270px}
+.map-area{left:270px}
+.sidebar.closed~.map-area{left:0}
+.sidebar-toggle{left:285px}
+.sidebar.closed+.sidebar-toggle{left:15px}
+.plan-page,.document-page,.profile-page{padding:25px}
+.section-nav{padding:0 15px}
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+<div class="logo">Atithi<span>Guide.</span></div>
+<div class="nav-links">
+<button onclick="showPage('explorePage')">Explore</button>
+<button onclick="showPage('planPage')">Plan</button>
+<button onclick="showPage('documentPage')">Document</button>
+</div>
+<button class="profile-btn" onclick="showPage('profilePage')">Profile</button>
+</nav>
+
+<section id="explorePage" class="page active-page">
+<div class="selection-bar">
+<select id="countrySelect"><option value="">Country</option></select>
+<select id="stateSelect"><option value="">State</option></select>
+<select id="citySelect"><option value="">City</option></select>
+<button class="action-btn" id="autoFillBtn" onclick="autoFill()">Auto Fill</button>
+<select id="fromSelect"><option value="">From</option></select>
+<select id="toSelect"><option value="">To</option></select>
+<button class="route-btn" onclick="findRoute()">Find Route</button>
+</div>
+
+<div class="sidebar" id="sidebar">
+<h3>Locations</h3>
+<div class="location-list" id="locationList"></div>
+</div>
+
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">☰</button>
+
+<div class="map-area" id="mapArea">
+<svg class="map" id="map" viewBox="0 0 1400 800">
+<g id="edges"></g>
+<g id="nodes"></g>
+</svg>
+
+<div class="info" id="infoBox">
+<h3 id="infoTitle"></h3>
+<p id="infoText"></p>
+<div class="info-images" id="infoImages"></div>
+</div>
+
+<div class="zoom">
+<button onclick="zoomMap(1.15)">+</button>
+<button onclick="zoomMap(.87)">−</button>
+</div>
+
+<div class="controls">
+<button onclick="resetMap()">Reset</button>
+</div>
+
+<div class="route-box">
+<strong>Route Path</strong>
+<span id="routeText">Select locations to find a route</span>
+</div>
+</div>
+
+<div class="explore-next">
+<button class="plan-btn" onclick="openPlan()">Plan Journey →</button>
+</div>
+</section>
+
+<section id="planPage" class="page">
+<div class="plan-page">
+<div class="plan-container">
+<h1>Your Plan</h1>
+<p class="page-subtitle">Verify each location when you reach it.</p>
+<div class="journey" id="journey"></div>
+</div>
+</div>
+
+<div class="section-nav">
+<button onclick="showPage('explorePage')">← Explore</button>
+<button class="next" onclick="goToDocument()">Document →</button>
+</div>
+</section>
+
+<section id="documentPage" class="page">
+<div class="document-page">
+<div class="document-card">
+<h1>Travel Document</h1>
+<p class="page-subtitle">Your planned journey and verified locations.</p>
+
+<div class="document-section">
+<h3>Journey</h3>
+<div class="document-route" id="documentRoute">No journey planned.</div>
+</div>
+
+<div class="document-section">
+<h3>Verified Locations</h3>
+<div id="documentVerified">None</div>
+</div>
+</div>
+</div>
+
+<div class="section-nav">
+<button onclick="showPage('planPage')">← Plan</button>
+<button class="next" onclick="showPage('explorePage')">Explore →</button>
+</div>
+</section>
+
+<section id="profilePage" class="page">
+<div class="profile-page">
+<div class="profile-card">
+<div class="avatar">U</div>
+<h1>Traveler</h1>
+<p class="page-subtitle">Profile features will be available in the future.</p>
+</div>
+</div>
+</section>
+
+<input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
+<input type="file" id="galleryInput" accept="image/*" hidden>
+
+<div class="dialog-overlay" id="dialogOverlay">
+<div class="dialog-box" id="dialogBox">
+<div class="dialog-icon">!</div>
+<h3 id="dialogTitle"></h3>
+<p id="dialogMessage"></p>
+<button class="dialog-ok" onclick="closeDialog()">OK</button>
+</div>
+</div>
+
+<script>
+const locationData={
+India:{
+Jharkhand:{Jamshedpur:true},
+Maharashtra:{Mumbai:false},
+Karnataka:{Bengaluru:false},
+"West Bengal":{Kolkata:false}
+},
+USA:{
+California:{"Los Angeles":true},
+"New York":{"New York City":false},
+Texas:{Houston:false}
+},
+UK:{
+England:{London:false},
+Scotland:{Edinburgh:false}
+},
+Japan:{
+Tokyo:{Tokyo:false},
+Osaka:{Osaka:false}
+},
+UAE:{
+Dubai:{Dubai:false},
+AbuDhabi:{"Abu Dhabi":false}
+}
+};
+
+const locationSets={
+Jamshedpur:[
+{id:1,name:"Jubilee Park",lat:22.8046,lng:86.2029,x:220,y:190,description:"A large urban park and one of the popular attractions in Jamshedpur.",images:["img/a.png","img/b.png"]},
+{id:2,name:"Tata Steel Zoological Park",lat:22.8084,lng:86.1908,x:450,y:280,description:"A zoological park located near Jubilee Park.",images:["img/c.png","img/d.png"]},
+{id:3,name:"Sir Dorabji Tata Park",lat:22.8065,lng:86.1915,x:700,y:190,description:"A landscaped city park in the heart of Jamshedpur.",images:["img/e.png","img/f.png"]},
+{id:4,name:"Bistupur",lat:22.8046,lng:86.1818,x:900,y:340,description:"A major commercial and lifestyle area of Jamshedpur.",images:["img/g.png","img/h.png"]},
+{id:5,name:"Dimna Lake",lat:22.8644,lng:86.2576,x:1160,y:220,description:"A scenic lake surrounded by the Dalma hills.",images:["img/i.png","img/j.png"]},
+{id:6,name:"JRD Tata Sports Complex",lat:22.8033,lng:86.1946,x:420,y:520,description:"A major sports complex in Jamshedpur.",images:["img/k.png","img/l.png"]},
+{id:7,name:"Keenan Stadium",lat:22.8058,lng:86.1967,x:680,y:610,description:"A historic sports stadium in Jamshedpur.",images:["img/m.png","img/n.png"]},
+{id:8,name:"Dalma Wildlife Sanctuary",lat:22.8987,lng:86.3062,x:1160,y:550,description:"A forested wildlife sanctuary near Jamshedpur.",images:["img/o.png","img/p.png"]}
+],
+"Los Angeles":[
+{id:101,name:"Hollywood Walk of Fame",lat:34.1016,lng:-118.3267,x:250,y:190,description:"A famous Hollywood boulevard featuring thousands of stars honoring celebrities.",images:[]},
+{id:102,name:"Griffith Observatory",lat:34.1184,lng:-118.3004,x:500,y:100,description:"A landmark observatory offering views of Los Angeles and the Hollywood sign.",images:[]},
+{id:103,name:"Universal Studios Hollywood",lat:34.1381,lng:-118.3534,x:720,y:270,description:"A major film studio and theme park in Los Angeles.",images:[]},
+{id:104,name:"Santa Monica Pier",lat:34.0092,lng:-118.4976,x:1050,y:190,description:"A historic oceanfront pier and one of the most recognizable attractions in Santa Monica.",images:[]},
+{id:105,name:"Venice Beach",lat:33.9850,lng:-118.4695,x:950,y:480,description:"A lively beachfront destination known for its boardwalk and coastal atmosphere.",images:[]},
+{id:106,name:"Los Angeles International Airport",lat:33.9416,lng:-118.4085,x:600,y:610,description:"Los Angeles International Airport, one of the major international airports serving Southern California.",images:[]}
+]
+};
+
+const graphSets={
+Jamshedpur:{
+1:[2,6],
+2:[1,3,6],
+3:[2,4],
+4:[3,5,7],
+5:[4,8],
+6:[1,2,7],
+7:[4,6,8],
+8:[5,7]
+},
+"Los Angeles":{
+101:[102,103],
+102:[101,103],
+103:[101,102,104],
+104:[103,105],
+105:[104,106],
+106:[105]
+}
+};
+
+let locations=[];
+let graph={};
+let route=[];
+let visitedLocations=[];
+let transportModes={};
+let mapScale=1;
+let mapX=0;
+let mapY=0;
+let dragging=false;
+let startX=0;
+let startY=0;
+let currentX=0;
+let currentY=0;
+let verifyingLocation=null;
+let autoFillProcessing=false;
+
+const countrySelect=document.getElementById("countrySelect");
+const stateSelect=document.getElementById("stateSelect");
+const citySelect=document.getElementById("citySelect");
+const fromSelect=document.getElementById("fromSelect");
+const toSelect=document.getElementById("toSelect");
+const autoFillBtn=document.getElementById("autoFillBtn");
+const cameraInput=document.getElementById("cameraInput");
+const galleryInput=document.getElementById("galleryInput");
+
+function showPage(id){
+document.querySelectorAll(".page").forEach(page=>page.classList.remove("active-page"));
+document.getElementById(id).classList.add("active-page");
+if(id==="planPage")renderFullPlan();
+if(id==="documentPage")updateDocument();
+}
+
+function openPlan(){
+if(!route.length){
+showDialog("No Route Selected","Please select From and To locations and find a route first.");
+return;
+}
+showPage("planPage");
+}
+
+function loadCountries(){
+countrySelect.innerHTML='<option value="">Country</option>';
+Object.keys(locationData).forEach(country=>{
+const option=document.createElement("option");
+option.value=country;
+option.textContent=country;
+countrySelect.appendChild(option);
+});
+}
+
+function loadStates(){
+stateSelect.innerHTML='<option value="">State</option>';
+citySelect.innerHTML='<option value="">City</option>';
+fromSelect.innerHTML='<option value="">From</option>';
+toSelect.innerHTML='<option value="">To</option>';
+
+const country=countrySelect.value;
+
+if(!country||!locationData[country]){
+loadLocations();
+return;
+}
+
+Object.keys(locationData[country]).forEach(state=>{
+const option=document.createElement("option");
+option.value=state;
+option.textContent=state;
+stateSelect.appendChild(option);
+});
+
+loadLocations();
+}
+
+function loadCities(){
+citySelect.innerHTML='<option value="">City</option>';
+fromSelect.innerHTML='<option value="">From</option>';
+toSelect.innerHTML='<option value="">To</option>';
+
+const country=countrySelect.value;
+const state=stateSelect.value;
+
+if(!country||!state||!locationData[country][state]){
+loadLocations();
+return;
+}
+
+Object.keys(locationData[country][state]).forEach(city=>{
+const option=document.createElement("option");
+option.value=city;
+option.textContent=city;
+citySelect.appendChild(option);
+});
+
+loadLocations();
+}
+
+function getCurrentCityKey(){
+if(countrySelect.value==="India"&&stateSelect.value==="Jharkhand"&&citySelect.value==="Jamshedpur")return"Jamshedpur";
+if(countrySelect.value==="USA"&&stateSelect.value==="California"&&citySelect.value==="Los Angeles")return"Los Angeles";
+return null;
+}
+
+function loadLocations(){
+fromSelect.innerHTML='<option value="">From</option>';
+toSelect.innerHTML='<option value="">To</option>';
+document.getElementById("routeText").textContent="Select locations to find a route";
+document.getElementById("infoBox").classList.remove("show");
+
+const cityKey=getCurrentCityKey();
+
+if(cityKey){
+locations=locationSets[cityKey];
+graph=graphSets[cityKey];
+route=[];
+transportModes={};
+renderLocations();
+updateMap();
+}else{
+locations=[];
+graph={};
+route=[];
+transportModes={};
+document.getElementById("locationList").innerHTML='<div class="location-item"><strong>No locations available</strong><small>Map data for this city is coming soon.</small></div>';
+document.getElementById("edges").innerHTML="";
+document.getElementById("nodes").innerHTML="";
+}
+}
+
+function renderLocations(){
+const list=document.getElementById("locationList");
+list.innerHTML="";
+fromSelect.innerHTML='<option value="">From</option>';
+toSelect.innerHTML='<option value="">To</option>';
+
+if(!locations.length){
+list.innerHTML='<div class="location-item"><strong>No locations available</strong><small>Select a supported city to view locations.</small></div>';
+return;
+}
+
+locations.forEach(location=>{
+const item=document.createElement("div");
+item.className="location-item";
+item.innerHTML=`<strong>${location.name}</strong><small>${visitedLocations.includes(location.id)?"Verified ✓":"Tap to view information"}</small>`;
+item.onclick=()=>showLocation(location.id);
+list.appendChild(item);
+
+const a=document.createElement("option");
+a.value=location.id;
+a.textContent=location.name;
+fromSelect.appendChild(a);
+
+const b=document.createElement("option");
+b.value=location.id;
+b.textContent=location.name;
+toSelect.appendChild(b);
+});
+}
+
+function renderNodes(){
+const nodes=document.getElementById("nodes");
+nodes.innerHTML="";
+
+if(!locations.length)return;
+
+locations.forEach(location=>{
+const group=document.createElementNS("http://www.w3.org/2000/svg","g");
+group.classList.add("node");
+
+if(route.includes(location.id))group.classList.add("route");
+if(visitedLocations.includes(location.id))group.classList.add("visited");
+
+group.setAttribute("transform",`translate(${location.x},${location.y})`);
+group.onclick=()=>showLocation(location.id);
+
+const circle=document.createElementNS("http://www.w3.org/2000/svg","circle");
+circle.setAttribute("r","14");
+
+const label=document.createElementNS("http://www.w3.org/2000/svg","text");
+label.classList.add("node-label");
+label.setAttribute("x","20");
+label.setAttribute("y","5");
+label.textContent=location.name;
+
+group.appendChild(circle);
+group.appendChild(label);
+nodes.appendChild(group);
+});
+}
+
+function renderEdges(){
+const edges=document.getElementById("edges");
+edges.innerHTML="";
+
+if(!locations.length)return;
+
+const done=new Set();
+
+locations.forEach(location=>{
+(graph[location.id]||[]).forEach(next=>{
+const key=[location.id,next].sort((a,b)=>a-b).join("-");
+
+if(done.has(key))return;
+done.add(key);
+
+const target=locations.find(item=>item.id===next);
+if(!target)return;
+
+const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+line.classList.add("edge");
+
+if(
+route.includes(location.id)&&
+route.includes(next)&&
+Math.abs(route.indexOf(location.id)-route.indexOf(next))===1
+){
+line.classList.add("route-edge");
+}
+
+line.setAttribute("x1",location.x);
+line.setAttribute("y1",location.y);
+line.setAttribute("x2",target.x);
+line.setAttribute("y2",target.y);
+
+edges.appendChild(line);
+});
+});
+}
+
+function updateMap(){
+renderEdges();
+renderNodes();
+updateMapTransform();
+renderLocations();
+}
+
+function showLocation(id){
+const location=locations.find(item=>item.id===id);
+if(!location)return;
+
+document.getElementById("infoTitle").textContent=location.name;
+document.getElementById("infoText").textContent=location.description;
+
+const images=document.getElementById("infoImages");
+images.innerHTML="";
+
+if(location.images&&location.images.length){
+location.images.forEach(src=>{
+const image=document.createElement("img");
+image.src=src;
+image.alt=location.name;
+image.onerror=()=>image.style.display="none";
+images.appendChild(image);
+});
+}else{
+images.innerHTML='<div style="grid-column:1/-1;color:#999;font-size:12px">Images coming soon</div>';
+}
+
+document.getElementById("infoBox").classList.add("show");
+}
+
+function findShortestPath(start,end){
+const queue=[[start]];
+const visited=new Set([start]);
+
+while(queue.length){
+const path=queue.shift();
+const current=path[path.length-1];
+
+if(current===end)return path;
+
+for(const next of graph[current]||[]){
+if(!visited.has(next)){
+visited.add(next);
+queue.push([...path,next]);
+}
+}
+}
+
+return null;
+}
+
+function findRoute(){
+if(!locations.length){
+showDialog("Locations Unavailable","Route data is currently not available for the selected city.");
+return;
+}
+
+const start=Number(fromSelect.value);
+const end=Number(toSelect.value);
+
+if(!start||!end){
+showDialog("Select Locations","Please select both From and To locations.");
+return;
+}
+
+if(start===end){
+showDialog("Invalid Route","From and To locations cannot be the same.");
+return;
+}
+
+const result=findShortestPath(start,end);
+
+if(!result){
+route=[];
+transportModes={};
+updateMap();
+showDialog("Route Not Found","No route could be found between the selected locations.");
+return;
+}
+
+route=result;
+transportModes={};
+
+document.getElementById("routeText").textContent=result.map(id=>{
+const location=locations.find(location=>location.id===id);
+return location?location.name:"";
+}).join(" → ");
+
+updateMap();
+}
+
+function selectTransport(index,mode){
+transportModes[index]=mode;
+renderFullPlan();
+}
+
+function renderFullPlan(){
+const journey=document.getElementById("journey");
+journey.innerHTML="";
+
+if(!route.length){
+journey.innerHTML='<div class="journey-item"><div class="journey-info"><strong>No route planned</strong><small>Go to Explore and find a route first.</small></div></div>';
+return;
+}
+
+route.forEach((id,index)=>{
+const location=locations.find(item=>item.id===id);
+if(!location)return;
+
+const verified=visitedLocations.includes(id);
+const verifying=verifyingLocation===id;
+
+const item=document.createElement("div");
+item.className=`journey-item ${verified?"verified":""}`;
+
+item.innerHTML=`
+<div class="journey-dot">${verified?"✓":index+1}</div>
+<div class="journey-info">
+<strong>${location.name}</strong>
+<small>${verified?"Location verified":"Reach the location and verify your presence"}</small>
+</div>
+<div class="journey-buttons">
+<button class="camera-btn" type="button" title="Camera or Gallery" ${verifying?"disabled":""}>📷</button>
+<button class="verify-location-btn ${verified?"verified":""} ${verifying?"processing-btn":""}" data-location-id="${id}" ${verified||verifying?"disabled":""}>
+${verified?"Verified ✓":verifying?'<span class="spinner"></span>Verifying':"Verify"}
+</button>
+</div>
+`;
+
+item.querySelector(".camera-btn").onclick=()=>openImageChoice();
+item.querySelector(".verify-location-btn").onclick=()=>verifyLocation(id);
+
+journey.appendChild(item);
+
+if(index<route.length-1){
+const nextLocation=locations.find(item=>item.id===route[index+1]);
+const transport=document.createElement("div");
+transport.className="transport-between";
+transport.innerHTML=`
+<span>Travel to ${nextLocation?nextLocation.name:"next location"}:</span>
+<button class="transport-btn ${transportModes[index]==="Walking"?"selected":""}" onclick="selectTransport(${index},'Walking')">🚶 Walking</button>
+<button class="transport-btn ${transportModes[index]==="Cab"?"selected":""}" onclick="selectTransport(${index},'Cab')">🚕 Cab</button>
+<button class="transport-btn ${transportModes[index]==="Rickshaw"?"selected":""}" onclick="selectTransport(${index},'Rickshaw')">🛺 Rickshaw</button>
+`;
+journey.appendChild(transport);
+}
+});
+}
+
+function verifyLocation(id){
+if(visitedLocations.includes(id)||verifyingLocation)return;
+
+const button=document.querySelector(`.verify-location-btn[data-location-id="${id}"]`);
+
+if(!button)return;
+
+verifyingLocation=id;
+
+button.disabled=true;
+button.classList.add("processing-btn");
+button.innerHTML='<span class="spinner"></span>Verifying';
+
+const cameraButton=button.parentElement.querySelector(".camera-btn");
+if(cameraButton)cameraButton.disabled=true;
+
+if(!navigator.geolocation){
+verifyingLocation=null;
+renderFullPlan();
+showDialog("Location Unavailable","Your browser does not support location verification.");
+return;
+}
+
+navigator.geolocation.getCurrentPosition(position=>{
+const location=locations.find(item=>item.id===id);
+
+if(!location){
+verifyingLocation=null;
+renderFullPlan();
+return;
+}
+
+const distance=getDistance(
+position.coords.latitude,
+position.coords.longitude,
+location.lat,
+location.lng
+);
+
+if(distance<=50){
+visitedLocations.push(id);
+verifyingLocation=null;
+renderFullPlan();
+renderLocations();
+updateMap();
+}else{
+verifyingLocation=null;
+renderFullPlan();
+
+showDialog(
+"Verification Failed",
+`You are approximately ${Math.round(distance)} meters away from ${location.name}. You must be within 50 meters to verify this location.`
+);
+}
+},error=>{
+verifyingLocation=null;
+renderFullPlan();
+
+if(error.code===1){
+showDialog("Permission Denied","Please allow location access to verify your presence.");
+}else if(error.code===2){
+showDialog("Location Unavailable","Your current location could not be determined.");
+}else if(error.code===3){
+showDialog("Request Timeout","Location verification timed out. Please try again.");
+}else{
+showDialog("Verification Failed","Unable to verify your location.");
+}
+},{
+enableHighAccuracy:true,
+timeout:10000,
+maximumAge:0
+});
+}
+
+function getDistance(lat1,lon1,lat2,lon2){
+const R=6371000;
+const dLat=(lat2-lat1)*Math.PI/180;
+const dLon=(lon2-lon1)*Math.PI/180;
+
+const a=
+Math.sin(dLat/2)**2+
+Math.cos(lat1*Math.PI/180)*
+Math.cos(lat2*Math.PI/180)*
+Math.sin(dLon/2)**2;
+
+return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function goToDocument(){
+if(!route.length){
+showDialog("No Plan","Please create a route before continuing.");
+return;
+}
+
+showPage("documentPage");
+}
+
+function updateDocument(){
+const documentRoute=document.getElementById("documentRoute");
+const documentVerified=document.getElementById("documentVerified");
+
+if(route.length){
+documentRoute.innerHTML=route.map((id,index)=>{
+const location=locations.find(item=>item.id===id);
+const name=location?location.name:"";
+return `${index?'<span> → </span>':''}${name}`;
+}).join("");
+}else{
+documentRoute.textContent="No journey planned.";
+}
+
+if(visitedLocations.length){
+documentVerified.textContent=visitedLocations.map(id=>{
+const location=locations.find(item=>item.id===id);
+return location?location.name:"";
+}).filter(Boolean).join(", ");
+}else{
+documentVerified.textContent="None";
+}
+}
+
+function setAutoFillProcessing(){
+autoFillProcessing=true;
+autoFillBtn.disabled=true;
+autoFillBtn.innerHTML='<span class="processing"><span class="spinner"></span>Locating</span>';
+}
+
+function resetAutoFillButton(){
+autoFillProcessing=false;
+autoFillBtn.disabled=false;
+autoFillBtn.textContent="Auto Fill";
+}
+
+function autoFill(){
+if(autoFillProcessing)return;
+
+if(!navigator.geolocation){
+showDialog("Location Unavailable","Your browser does not support automatic location detection.");
+return;
+}
+
+setAutoFillProcessing();
+
+navigator.geolocation.getCurrentPosition(async position=>{
+try{
+const {latitude,longitude}=position.coords;
+
+const response=await fetch(
+`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`,
+{headers:{"Accept-Language":"en"}}
+);
+
+if(!response.ok)throw new Error("Reverse geocoding failed");
+
+const data=await response.json();
+const address=data.address||{};
+
+const country=(address.country||"").toLowerCase();
+const state=(address.state||"").toLowerCase();
+const city=(address.city||address.town||address.municipality||"").toLowerCase();
+
+if(
+country.includes("india")&&
+state.includes("jharkhand")&&
+(city.includes("jamshedpur")||city.includes("east singhbhum"))
+){
+countrySelect.value="India";
+loadStates();
+
+stateSelect.value="Jharkhand";
+loadCities();
+
+citySelect.value="Jamshedpur";
+loadLocations();
+
+resetAutoFillButton();
+
+showDialog("Location Found","Your location has been detected as Jamshedpur, Jharkhand, India.");
+}else if(
+(country.includes("united states")||country.includes("usa"))&&
+state.includes("california")&&
+city.includes("los angeles")
+){
+countrySelect.value="USA";
+loadStates();
+
+stateSelect.value="California";
+loadCities();
+
+citySelect.value="Los Angeles";
+loadLocations();
+
+resetAutoFillButton();
+
+showDialog("Location Found","Your location has been detected as Los Angeles, California, USA.");
+}else{
+resetAutoFillButton();
+
+showDialog(
+"Location Not Supported",
+"Your detected location is not available in the current AtithiGuide map data."
+);
+}
+}catch(error){
+resetAutoFillButton();
+
+showDialog(
+"Auto Fill Failed",
+"Unable to detect your location right now."
+);
+}
+},error=>{
+resetAutoFillButton();
+
+if(error.code===1){
+showDialog("Permission Denied","Please allow location access to use Auto Fill.");
+}else if(error.code===2){
+showDialog("Location Unavailable","Your current location could not be determined.");
+}else if(error.code===3){
+showDialog("Request Timeout","Location detection timed out. Please try again.");
+}else{
+showDialog("Auto Fill Failed","Unable to detect your location.");
+}
+},{
+enableHighAccuracy:true,
+timeout:10000,
+maximumAge:0
+});
+}
+
+function openImageChoice(){
+const box=document.getElementById("dialogBox");
+
+box.innerHTML=`
+<div class="dialog-icon">📷</div>
+<h3>Upload Photo</h3>
+<p>Choose how you want to add a photo.</p>
+<div class="camera-choice">
+<button type="button" id="takePhotoBtn">Camera</button>
+<button type="button" id="chooseGalleryBtn">Gallery</button>
+</div>
+`;
+
+document.getElementById("dialogOverlay").classList.add("show");
+
+document.getElementById("takePhotoBtn").onclick=()=>{
+closeDialog();
+setTimeout(()=>{
+cameraInput.click();
+},100);
+};
+
+document.getElementById("chooseGalleryBtn").onclick=()=>{
+closeDialog();
+setTimeout(()=>{
+galleryInput.click();
+},100);
+};
+}
+
+function toggleSidebar(){
+const sidebar=document.getElementById("sidebar");
+const button=document.getElementById("sidebarToggle");
+
+sidebar.classList.toggle("closed");
+button.textContent=sidebar.classList.contains("closed")?"☰":"×";
+}
+
+function zoomMap(value){
+mapScale*=value;
+mapScale=Math.max(.5,Math.min(2.5,mapScale));
+updateMapTransform();
+}
+
+function resetMap(){
+mapScale=1;
+mapX=0;
+mapY=0;
+updateMapTransform();
+}
+
+function updateMapTransform(){
+const map=document.getElementById("map");
+map.style.transform=`translate(calc(-50% + ${mapX}px),calc(-50% + ${mapY}px)) scale(${mapScale})`;
+}
+
+const mapArea=document.getElementById("mapArea");
+
+mapArea.addEventListener("mousedown",e=>{
+if(e.target.closest(".node"))return;
+
+dragging=true;
+startX=e.clientX;
+startY=e.clientY;
+currentX=mapX;
+currentY=mapY;
+});
+
+window.addEventListener("mousemove",e=>{
+if(!dragging)return;
+
+mapX=currentX+e.clientX-startX;
+mapY=currentY+e.clientY-startY;
+
+updateMapTransform();
+});
+
+window.addEventListener("mouseup",()=>dragging=false);
+
+mapArea.addEventListener("wheel",e=>{
+e.preventDefault();
+zoomMap(e.deltaY<0?1.1:.9);
+},{passive:false});
+
+function showDialog(title,message){
+const box=document.getElementById("dialogBox");
+
+box.innerHTML=`
+<div class="dialog-icon">!</div>
+<h3 id="dialogTitle"></h3>
+<p id="dialogMessage"></p>
+<button class="dialog-ok" onclick="closeDialog()">OK</button>
+`;
+
+document.getElementById("dialogTitle").textContent=title;
+document.getElementById("dialogMessage").textContent=message;
+document.getElementById("dialogOverlay").classList.add("show");
+}
+
+function closeDialog(){
+document.getElementById("dialogOverlay").classList.remove("show");
+}
+
+countrySelect.addEventListener("change",loadStates);
+stateSelect.addEventListener("change",loadCities);
+citySelect.addEventListener("change",loadLocations);
+
+cameraInput.addEventListener("change",function(){
+if(this.files&&this.files.length){
+console.log("Camera image selected:",this.files[0]);
+}
+this.value="";
+});
+
+galleryInput.addEventListener("change",function(){
+if(this.files&&this.files.length){
+console.log("Gallery image selected:",this.files[0]);
+}
+this.value="";
+});
+
+loadCountries();
+
+countrySelect.value="India";
+loadStates();
+
+stateSelect.value="Jharkhand";
+loadCities();
+
+citySelect.value="Jamshedpur";
+loadLocations();
+</script>
+</body>
+</html>
